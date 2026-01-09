@@ -34,6 +34,7 @@ local function startFly()
         local moveDir = hum.MoveDirection
         if moveDir.Magnitude > 0 then
             local camCFrame = cam.CFrame
+            -- Chỉnh lại vector để bay chính xác theo camera
             local vel = (camCFrame.LookVector * moveDir.Z + 
                          camCFrame.RightVector * moveDir.X + 
                          Vector3.new(0, moveDir.Y, 0)) * speed
@@ -115,13 +116,8 @@ speedInput.Font = Enum.Font.SourceSans
 speedInput.TextScaled = true
 speedInput.ClearTextOnFocus = false
 
--- Khi nhập xong speed, lưu giá trị mới mà không reset fly
 speedInput.FocusLost:Connect(function()
     local v = tonumber(speedInput.Text)
-    if v then
-        speed = math.clamp(v,10,500)
-        speedInput.Text = tostring(speed)
-    else
-        speedInput.Text = tostring(speed)
-    end
+    if v then speed = math.clamp(v,10,500) end
+    speedInput.Text = tostring(speed)
 end)
