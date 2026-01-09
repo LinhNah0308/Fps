@@ -1,28 +1,20 @@
--- ================= CONFIG =================
-local CONFIG = {
-    IconImageId = _G.IconImageId
-        and ("rbxassetid://" .. tostring(_G.IconImageId))
-        or "rbxassetid://1234567890", -- icon mặc định nếu không truyền
+-- CONFIG
+_G.IconImageId = "119077940443302" -- nếu không hiện, sẽ fallback thành "FLY"
 
-    DefaultSpeed = 50,
-    MinSpeed = 10,
-    MaxSpeed = 500,
-}
-
--- ================= SERVICES =================
+-- SERVICES
 local Players = game:GetService("Players")
-local UIS = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local UIS = game:GetService("UserInputService")
 
 local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
 local hum = char:WaitForChild("Humanoid")
 
--- ================= STATE =================
+-- STATE
 local flying = false
 local noclip = false
-local speed = CONFIG.DefaultSpeed
+local speed = 50
 local bv, bg
 local flyConn, noclipConn
 
@@ -42,7 +34,7 @@ local function setNoclip(state)
 end
 
 -- ================= FLY =================
-local function startFly()
+local function startFly(dirVector)
     bv = Instance.new("BodyVelocity", hrp)
     bv.MaxForce = Vector3.new(1e9,1e9,1e9)
 
@@ -54,15 +46,7 @@ local function startFly()
 
     flyConn = RunService.RenderStepped:Connect(function()
         local cam = workspace.CurrentCamera
-        local dir = Vector3.zero
-
-        if UIS:IsKeyDown(Enum.KeyCode.W) then dir += cam.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.S) then dir -= cam.CFrame.LookVector end
-        if UIS:IsKeyDown(Enum.KeyCode.A) then dir -= cam.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.D) then dir += cam.CFrame.RightVector end
-        if UIS:IsKeyDown(Enum.KeyCode.Space) then dir += Vector3.new(0,1,0) end
-        if UIS:IsKeyDown(Enum.KeyCode.LeftControl) then dir -= Vector3.new(0,1,0) end
-
+        local dir = dirVector or Vector3.zero
         bv.Velocity = dir.Magnitude > 0 and dir.Unit * speed or Vector3.zero
         bg.CFrame = cam.CFrame
     end)
@@ -81,8 +65,8 @@ local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.ResetOnSpawn = false
 
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.fromScale(0.25,0.28)
-main.Position = UDim2.fromScale(0.05,0.32)
+main.Size = UDim2.new(0,180,0,220)
+main.Position = UDim2.new(0.05,0,0.3,0)
 main.BackgroundColor3 = Color3.new(0,0,0)
 main.BorderColor3 = Color3.new(1,1,1)
 main.BorderSizePixel = 2
@@ -91,6 +75,8 @@ main.Draggable = true
 
 local layout = Instance.new("UIListLayout", main)
 layout.Padding = UDim.new(0,6)
+layout.FillDirection = Enum.FillDirection.Vertical
+layout.SortOrder = Enum.SortOrder.LayoutOrder
 
 local function box(h)
     local f = Instance.new("Frame", main)
@@ -103,24 +89,35 @@ local function box(h)
 end
 
 -- FLY BOX
-local flyBox = box(40)
+local flyBox = box(50)
 
 local icon = Instance.new("ImageLabel", flyBox)
-icon.Size = UDim2.new(0,26,0,26)
-icon.Position = UDim2.new(0,6,0.5,-13)
+icon.Size = UDim2.new(0,40,0,40)
+icon.Position = UDim2.new(0,5,0.5,-20)
 icon.BackgroundTransparency = 1
-icon.Image = CONFIG.IconImageId
+if _G.IconImageId then
+    icon.Image = "rbxassetid://".._G.IconImageId
+else
+    local fallback = Instance.new("TextLabel", flyBox)
+    fallback.Text = "FLY"
+    fallback.Size = UDim2.new(0,40,0,40)
+    fallback.Position = UDim2.new(0,5,0.5,-20)
+    fallback.BackgroundTransparency = 1
+    fallback.TextColor3 = Color3.new(1,1,1)
+    fallback.Font = Enum.Font.SourceSansBold
+    fallback.TextScaled = true
+end
 
 local flyBtn = Instance.new("TextButton", flyBox)
-flyBtn.Size = UDim2.new(1,-40,1,0)
-flyBtn.Position = UDim2.new(0,40,0,0)
+flyBtn.Size = UDim2.new(1,-50,1,0)
+flyBtn.Position = UDim2.new(0,50,0,0)
 flyBtn.BackgroundTransparency = 1
 flyBtn.Text = "FLY : OFF"
 flyBtn.TextColor3 = Color3.new(1,1,1)
 flyBtn.Font = Enum.Font.SourceSansBold
 flyBtn.TextScaled = true
 
--- SPEED
+-- SPEED BOX
 local speedBox = box(40)
 
 local speedLabel = Instance.new("TextLabel", speedBox)
@@ -138,12 +135,12 @@ speedInput.BackgroundColor3 = Color3.new(0,0,0)
 speedInput.BorderColor3 = Color3.new(1,1,1)
 speedInput.Text = tostring(speed)
 speedInput.TextColor3 = Color3.new(1,1,1)
+speedInput.Font = Enum.Font.SourceSans
 speedInput.TextScaled = true
 speedInput.ClearTextOnFocus = false
 
 -- NOCLIP
 local noclipBox = box(40)
-
 local noclipBtn = Instance.new("TextButton", noclipBox)
 noclipBtn.Size = UDim2.new(1,0,1,0)
 noclipBtn.BackgroundTransparency = 1
@@ -152,18 +149,48 @@ noclipBtn.TextColor3 = Color3.new(1,1,1)
 noclipBtn.Font = Enum.Font.SourceSansBold
 noclipBtn.TextScaled = true
 
+-- MOBILE TOUCH BUTTONS
+local touchFrame = Instance.new("Frame", gui)
+touchFrame.Size = UDim2.new(0,200,0,150)
+touchFrame.Position = UDim2.new(0.7,0,0.6,0)
+touchFrame.BackgroundTransparency = 0.5
+touchFrame.BackgroundColor3 = Color3.new(0,0,0)
+touchFrame.BorderColor3 = Color3.new(1,1,1)
+touchFrame.BorderSizePixel = 2
+
+local function createTouchButton(name,pos,dir)
+    local btn = Instance.new("TextButton", touchFrame)
+    btn.Size = UDim2.new(0,60,0,60)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.new(0,0,0)
+    btn.BorderColor3 = Color3.new(1,1,1)
+    btn.Text = name
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.TextScaled = true
+    btn.Font = Enum.Font.SourceSansBold
+
+    btn.TouchTap:Connect(function()
+        if flying then
+            startFly(dir)
+        end
+    end)
+end
+
+createTouchButton("UP",UDim2.new(0,70,0,0),Vector3.new(0,1,0))
+createTouchButton("DOWN",UDim2.new(0,70,0,80),Vector3.new(0,-1,0))
+createTouchButton("LEFT",UDim2.new(0,5,0,40),Vector3.new(-1,0,0))
+createTouchButton("RIGHT",UDim2.new(0,135,0,40),Vector3.new(1,0,0))
+
 -- ================= EVENTS =================
 flyBtn.MouseButton1Click:Connect(function()
     flying = not flying
     flyBtn.Text = flying and "FLY : ON" or "FLY : OFF"
-    if flying then startFly() else stopFly() end
+    if not flying then stopFly() end
 end)
 
 speedInput.FocusLost:Connect(function()
     local v = tonumber(speedInput.Text)
-    if v then
-        speed = math.clamp(v, CONFIG.MinSpeed, CONFIG.MaxSpeed)
-    end
+    if v then speed = math.clamp(v,10,500) end
     speedInput.Text = tostring(speed)
 end)
 
