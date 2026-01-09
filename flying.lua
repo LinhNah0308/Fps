@@ -1,11 +1,10 @@
 -- CONFIG
-_G.IconImageId = "119077940443302" -- nếu không hiện, sẽ fallback thành "FLY"
+_G.IconImageId = "119077940443302"
+local speed = 50 -- tốc độ bay
 
 -- SERVICES
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local UIS = game:GetService("UserInputService")
-
 local player = Players.LocalPlayer
 local char = player.Character or player.CharacterAdded:Wait()
 local hrp = char:WaitForChild("HumanoidRootPart")
@@ -13,42 +12,31 @@ local hum = char:WaitForChild("Humanoid")
 
 -- STATE
 local flying = false
-local noclip = false
-local speed = 50
 local bv, bg
-local flyConn, noclipConn
+local flyConn
 
--- ================= NOCLIP =================
-local function setNoclip(state)
-    if state then
-        noclipConn = RunService.Stepped:Connect(function()
-            for _,v in ipairs(char:GetDescendants()) do
-                if v:IsA("BasePart") then
-                    v.CanCollide = false
-                end
-            end
-        end)
-    else
-        if noclipConn then noclipConn:Disconnect() end
-    end
-end
+-- FUNCTIONS
+local function startFly()
+    if bv then bv:Destroy() end
+    if bg then bg:Destroy() end
 
--- ================= FLY =================
-local function startFly(dirVector)
-    bv = Instance.new("BodyVelocity", hrp)
+    bv = Instance.new("BodyVelocity")
     bv.MaxForce = Vector3.new(1e9,1e9,1e9)
+    bv.Velocity = Vector3.new(0,0,0)
+    bv.Parent = hrp
 
-    bg = Instance.new("BodyGyro", hrp)
+    bg = Instance.new("BodyGyro")
     bg.MaxTorque = Vector3.new(1e9,1e9,1e9)
+    bg.CFrame = hrp.CFrame
+    bg.Parent = hrp
 
     hum.PlatformStand = true
-    if noclip then setNoclip(true) end
 
     flyConn = RunService.RenderStepped:Connect(function()
-        local cam = workspace.CurrentCamera
-        local dir = dirVector or Vector3.zero
-        bv.Velocity = dir.Magnitude > 0 and dir.Unit * speed or Vector3.zero
-        bg.CFrame = cam.CFrame
+        -- Lấy vector từ joystick của Roblox Mobile
+        local moveVec = hrp.Velocity.Unit
+        bv.Velocity = moveVec * speed
+        bg.CFrame = hrp.CFrame
     end)
 end
 
@@ -56,16 +44,15 @@ local function stopFly()
     if flyConn then flyConn:Disconnect() end
     if bv then bv:Destroy() end
     if bg then bg:Destroy() end
-    setNoclip(false)
     hum.PlatformStand = false
 end
 
--- ================= UI =================
+-- UI
 local gui = Instance.new("ScreenGui", player.PlayerGui)
 gui.ResetOnSpawn = false
 
 local main = Instance.new("Frame", gui)
-main.Size = UDim2.new(0,180,0,220)
+main.Size = UDim2.new(0,180,0,80)
 main.Position = UDim2.new(0.05,0,0.3,0)
 main.BackgroundColor3 = Color3.new(0,0,0)
 main.BorderColor3 = Color3.new(1,1,1)
@@ -78,18 +65,13 @@ layout.Padding = UDim.new(0,6)
 layout.FillDirection = Enum.FillDirection.Vertical
 layout.SortOrder = Enum.SortOrder.LayoutOrder
 
-local function box(h)
-    local f = Instance.new("Frame", main)
-    f.Size = UDim2.new(1,-10,0,h)
-    f.Position = UDim2.new(0,5,0,0)
-    f.BackgroundColor3 = Color3.new(0,0,0)
-    f.BorderColor3 = Color3.new(1,1,1)
-    f.BorderSizePixel = 1
-    return f
-end
-
 -- FLY BOX
-local flyBox = box(50)
+local flyBox = Instance.new("Frame", main)
+flyBox.Size = UDim2.new(1,-10,0,50)
+flyBox.Position = UDim2.new(0,5,0,0)
+flyBox.BackgroundColor3 = Color3.new(0,0,0)
+flyBox.BorderColor3 = Color3.new(1,1,1)
+flyBox.BorderSizePixel = 1
 
 local icon = Instance.new("ImageLabel", flyBox)
 icon.Size = UDim2.new(0,40,0,40)
@@ -118,7 +100,12 @@ flyBtn.Font = Enum.Font.SourceSansBold
 flyBtn.TextScaled = true
 
 -- SPEED BOX
-local speedBox = box(40)
+local speedBox = Instance.new("Frame", main)
+speedBox.Size = UDim2.new(1,-10,0,40)
+speedBox.Position = UDim2.new(0,5,0,56)
+speedBox.BackgroundColor3 = Color3.new(0,0,0)
+speedBox.BorderColor3 = Color3.new(1,1,1)
+speedBox.BorderSizePixel = 1
 
 local speedLabel = Instance.new("TextLabel", speedBox)
 speedLabel.Size = UDim2.new(0.45,0,1,0)
@@ -139,63 +126,15 @@ speedInput.Font = Enum.Font.SourceSans
 speedInput.TextScaled = true
 speedInput.ClearTextOnFocus = false
 
--- NOCLIP
-local noclipBox = box(40)
-local noclipBtn = Instance.new("TextButton", noclipBox)
-noclipBtn.Size = UDim2.new(1,0,1,0)
-noclipBtn.BackgroundTransparency = 1
-noclipBtn.Text = "NOCLIP : OFF"
-noclipBtn.TextColor3 = Color3.new(1,1,1)
-noclipBtn.Font = Enum.Font.SourceSansBold
-noclipBtn.TextScaled = true
-
--- MOBILE TOUCH BUTTONS
-local touchFrame = Instance.new("Frame", gui)
-touchFrame.Size = UDim2.new(0,200,0,150)
-touchFrame.Position = UDim2.new(0.7,0,0.6,0)
-touchFrame.BackgroundTransparency = 0.5
-touchFrame.BackgroundColor3 = Color3.new(0,0,0)
-touchFrame.BorderColor3 = Color3.new(1,1,1)
-touchFrame.BorderSizePixel = 2
-
-local function createTouchButton(name,pos,dir)
-    local btn = Instance.new("TextButton", touchFrame)
-    btn.Size = UDim2.new(0,60,0,60)
-    btn.Position = pos
-    btn.BackgroundColor3 = Color3.new(0,0,0)
-    btn.BorderColor3 = Color3.new(1,1,1)
-    btn.Text = name
-    btn.TextColor3 = Color3.new(1,1,1)
-    btn.TextScaled = true
-    btn.Font = Enum.Font.SourceSansBold
-
-    btn.TouchTap:Connect(function()
-        if flying then
-            startFly(dir)
-        end
-    end)
-end
-
-createTouchButton("UP",UDim2.new(0,70,0,0),Vector3.new(0,1,0))
-createTouchButton("DOWN",UDim2.new(0,70,0,80),Vector3.new(0,-1,0))
-createTouchButton("LEFT",UDim2.new(0,5,0,40),Vector3.new(-1,0,0))
-createTouchButton("RIGHT",UDim2.new(0,135,0,40),Vector3.new(1,0,0))
-
--- ================= EVENTS =================
+-- EVENTS
 flyBtn.MouseButton1Click:Connect(function()
     flying = not flying
     flyBtn.Text = flying and "FLY : ON" or "FLY : OFF"
-    if not flying then stopFly() end
+    if flying then startFly() else stopFly() end
 end)
 
 speedInput.FocusLost:Connect(function()
     local v = tonumber(speedInput.Text)
     if v then speed = math.clamp(v,10,500) end
     speedInput.Text = tostring(speed)
-end)
-
-noclipBtn.MouseButton1Click:Connect(function()
-    noclip = not noclip
-    noclipBtn.Text = noclip and "NOCLIP : ON" or "NOCLIP : OFF"
-    if flying then setNoclip(noclip) end
 end)
