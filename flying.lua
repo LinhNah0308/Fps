@@ -33,9 +33,14 @@ local function startFly()
     hum.PlatformStand = true
 
     flyConn = RunService.RenderStepped:Connect(function()
-        -- Lấy vector từ joystick của Roblox Mobile
-        local moveVec = hrp.Velocity.Unit
-        bv.Velocity = moveVec * speed
+        -- Bay theo joystick mặc định Mobile
+        local cam = workspace.CurrentCamera
+        local moveVector = Vector3.new(
+            hum.MoveDirection.X,
+            hum.MoveDirection.Y,
+            hum.MoveDirection.Z
+        )
+        bv.Velocity = moveVector * speed
         bg.CFrame = hrp.CFrame
     end)
 end
@@ -60,14 +65,9 @@ main.BorderSizePixel = 2
 main.Active = true
 main.Draggable = true
 
-local layout = Instance.new("UIListLayout", main)
-layout.Padding = UDim.new(0,6)
-layout.FillDirection = Enum.FillDirection.Vertical
-layout.SortOrder = Enum.SortOrder.LayoutOrder
-
--- FLY BOX
+-- FLY BUTTON
 local flyBox = Instance.new("Frame", main)
-flyBox.Size = UDim2.new(1,-10,0,50)
+flyBox.Size = UDim2.new(1,-10,1,0)
 flyBox.Position = UDim2.new(0,5,0,0)
 flyBox.BackgroundColor3 = Color3.new(0,0,0)
 flyBox.BorderColor3 = Color3.new(1,1,1)
@@ -99,10 +99,10 @@ flyBtn.TextColor3 = Color3.new(1,1,1)
 flyBtn.Font = Enum.Font.SourceSansBold
 flyBtn.TextScaled = true
 
--- SPEED BOX
+-- SPEED INPUT
 local speedBox = Instance.new("Frame", main)
 speedBox.Size = UDim2.new(1,-10,0,40)
-speedBox.Position = UDim2.new(0,5,0,56)
+speedBox.Position = UDim2.new(0,5,1,0)
 speedBox.BackgroundColor3 = Color3.new(0,0,0)
 speedBox.BorderColor3 = Color3.new(1,1,1)
 speedBox.BorderSizePixel = 1
